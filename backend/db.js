@@ -36,6 +36,16 @@ const createTables = `
         FOREIGN KEY (user_id) REFERENCES users (id)
     );
 
+    CREATE TABLE IF NOT EXISTS exercises (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        sets INTEGER, 
+        reps INTEGER,
+        weight REAL,
+        workout_id INTEGER, 
+        FOREIGN KEY (workout_id) REFERENCES workouts (id)
+    );
+
     CREATE TABLE IF NOT EXISTS meals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         food TEXT NOT NULL,
