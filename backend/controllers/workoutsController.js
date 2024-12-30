@@ -45,20 +45,35 @@ const logWorkout = (req, res) => {
 const getAllWorkouts = (req, res) => {
     const user_id = req.user.id;
 
-    if (!user_id) {
-        res.status(400).json({error: "You need to login first"});
-        return;
-    }
-
-    db.all(
-        'SELECT * FROM workouts WHERE user_id = ?', 
-        [user_id], 
-        (err, workouts) => {
-            if (err) {
-                res.status(400).json({error: "Database error"});
-                return;
-            }
+    db.all('SELECT * FROM workouts WHERE user_id = ?', [user_id], (err, workouts) => {
+        if (err) {
+            res.status(500).json({ error: 'Database error' });
+            return;
         }
-    );
-}
+
+        // Fetch exercises for each workout
+        const workoutIds = workouts.map((workout) => workout.id);
+        const placeholders = workoutIds.map(() => '?').join(',');
+
+        db.all(
+            `SELECT * FROM exercises WHERE workout_id IN (${placeholders})`,
+            workoutIds,
+            (err, exercises) => {
+                if (err) {
+                    res.status(500).json({ error: 'Database error' });
+                    return;
+                }
+
+                // Combine workouts with their exercises
+                const result = workouts.map((workout) => ({
+                    ...workout,
+                    exercises: exercises.filter((exercise) => exercise.workout_id === workout.id),
+                }));
+
+                res.json(result);
+            }
+        );
+    });
+};
+
 
