@@ -45,6 +45,11 @@ const logWorkout = (req, res) => {
 const getAllWorkouts = (req, res) => {
     const user_id = req.user.id;
 
+    if (!user_id) {
+        req.status(400).json({error: 'Need to be signed in to acess workout history'});
+        return;
+    }
+
     db.all('SELECT * FROM workouts WHERE user_id = ?', [user_id], (err, workouts) => {
         if (err) {
             res.status(500).json({ error: 'Database error' });
@@ -76,4 +81,52 @@ const getAllWorkouts = (req, res) => {
     });
 };
 
+const getWorkout = (req, res) => {
+    const user_id = req.user.id;
 
+    if (!user_id) {
+        req.status(400).json({error: 'Need to be signed in to acess workout history'});
+        return;
+    }
+
+    const {workout_id} = req.body;
+
+    if (!workout_id) {
+        req.status(400).json({error: 'Need to provide a workout ID'});
+        return;
+    }
+
+    db.get(
+        'SELECT * FROM workouts WHERE id = ? AND user_id = ?',
+        [workout_id, user_id], 
+        (err, workout) => {
+            if (err) {
+                res.status(500).json({error: 'Database Error'});
+                return;
+            }
+
+            if (!workout) {
+                res.status(400).json({error: 'No workout with this ID found'});
+                return;
+            }
+
+            db.all(
+                'SELECT * FROM exercises WHERE workout_id = ?', 
+                [workout_id], 
+                (err, exercises) => {
+                    if (err) {
+                        res.status(500).json({error: 'Database error'})
+                        return;
+                    }
+
+                    const result = {
+                        ...workout,
+                        exercises,
+                    };
+
+                    res.status(200).json(result);
+                }
+            );
+        }
+    );
+}
